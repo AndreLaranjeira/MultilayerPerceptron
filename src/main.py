@@ -7,6 +7,7 @@ import sys
 import theano
 
 # User imports:
+import plot
 
 # Main function:
 
