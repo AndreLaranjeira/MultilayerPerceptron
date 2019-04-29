@@ -1,4 +1,5 @@
-# Program to implement a multilayer perceptron to classify hand-written digits from the MNIST database
+# Program to implement a multilayer perceptron to classify hand-written digits
+# from the MNIST database
 
 # Package imports:
 from mnist import MNIST
