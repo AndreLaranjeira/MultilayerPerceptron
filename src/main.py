@@ -8,6 +8,7 @@ import sys
 import theano
 
 # User imports:
+import mlp
 import plot
 
 # Main function:
