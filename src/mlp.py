@@ -4,6 +4,8 @@
 import numpy as np
 import theano
 
+# Classes:
+
 # Class to represent the output layer of a multilayer perceptron:
 #   Parameters:
 #       layer_input: TensorType with input variables for this layer.

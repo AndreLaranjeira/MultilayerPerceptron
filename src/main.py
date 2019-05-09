@@ -8,6 +8,7 @@ import sys
 import theano
 
 # User imports:
+import data
 import mlp
 import plot
 
@@ -31,5 +32,19 @@ mndata.train_img_fname = 'train-images.idx3-ubyte'
 mndata.train_lbl_fname = 'train-labels.idx1-ubyte'
 
 # Data extraction:
-train_images, train_labels = mndata.load_training()
-test_images, test_labels = mndata.load_testing()
+print("Extracting data... ", end='')
+
+np_train_images, np_train_labels = mndata.load_training()
+np_test_images, np_test_labels = mndata.load_testing()
+
+print("(Done!)")
+
+# Data formatting:
+print("Formatting data... ", end='')
+
+train_images = data.np_to_theano(np_train_images)
+test_images = data.np_to_theano(np_test_images)
+train_labels = data.np_to_theano(np_train_labels, cast_to_label=True)
+test_labels = data.np_to_theano(np_test_labels, cast_to_label=True)
+
+print("(Done!)")
