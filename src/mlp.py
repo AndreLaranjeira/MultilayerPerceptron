@@ -6,6 +6,47 @@ import theano
 
 # Classes:
 
+# Class to represent a complete multilayer perceptron (MLP):
+#   Parameters:
+#       input: TensorType with input variables for this MLP.
+#       n_inputs: Number of input variables.
+#       n_outputs: Number of outputs (classes) desired.
+#       n_hlayers: Number of hidden layers.
+#       hlayer_sizes: Array with the sizes of the hidden layers.
+#           IMPORTANT: Must be the same length as n_hlayers!
+
+class MultilayerPerceptron:
+
+    def __init__(self, input, n_inputs, n_outputs, n_hlayers, hlayer_sizes):
+
+        # Initialize the input:
+        self.input = input
+
+        # WARNING: This implementation is only temporary! Changes should be made
+        # to it, to account for the HiddenLayer implementation!!!
+
+        # Initializing the output layer:
+        self.output_layer = OutputLayer(input = input,
+                                        n_inputs = n_inputs,
+                                        n_outputs = n_outputs)
+
+        # Record the parameters:
+        self.params = self.output_layer.params
+
+        # Cost metrics:
+        ## L1 cost metric:
+        self.L1 = abs(self.output_layer.weights).sum()
+
+        ## L2 squared cost metric:
+        self.L2_sqr = (self.output_layer.weights ** 2).sum()
+
+        # Classification metrics:
+        ## MLP errors:
+        self.error_percentage = self.output_layer.error_percentage
+
+        ## MLP Negative logarithm likehood:
+        self.negative_log_likehood = self.output_layer.negative_log_likehood
+
 # Class to represent the output layer of a multilayer perceptron:
 #   Parameters:
 #       layer_input: TensorType with input variables for this layer.
