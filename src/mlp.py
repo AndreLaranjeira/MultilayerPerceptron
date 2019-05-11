@@ -162,3 +162,54 @@ class HiddenLayer:
         )
         
         self.params = [self.W, self.b]
+
+def train(input_data, input_data_size, input_label, output_n_classifications, hlayer_sizes, learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000, batch_size=20):
+
+    # Number of minibatches
+    n_minibatches = input_data.get_value(borrow=True).shape[0] // batch_size
+    
+    # Minibatch index
+    index = T.lscalar()
+    
+    # Input matrix
+    x = T.matrix('x')
+    
+    # Label matrix
+    y = T.ivector('y')
+    
+    # Instance of MLP
+    classifier = MultilayerPerceptron(
+        layer_input=x, 
+        n_inputs=input_data_size, 
+        n_outputs=output_n_classifications, 
+        n_hlayers=len(hlayer_sizes), 
+        hlayer_sizes=hlayer_sizes
+    )
+    
+    # Cost definition
+    cost = (
+        classifier.negative_log_likehood(y)
+        + L1_reg * classifier.L1
+        + L2_reg * classifier.L2_sqr
+    )
+    
+    # Compute gradient
+    gparams = [T.grad(cost, param) for param in classifier.params]
+    
+    # Compute param update
+    updates = [
+        (param, param - learning_rate * gparam)
+        for param, gparam in zip(classifier.params, gparams)
+    ]
+    
+    # Train model definition
+    train_model = theano.function(
+        inputs=[index],
+        outputs=cost,
+        updates=updates,
+        givens={
+            x: input_data[index * batch_size: (index+1) * batch_size],
+            y: input_label[index * batch_size: (index+1) * batch_size]
+        }
+    )
+

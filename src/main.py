@@ -15,14 +15,14 @@ import plot
 # Main function:
 
 # Program arguments:
-if(len(sys.argv) != 3 and len(sys.argv) != 4):
-    print("[Error] Number of program arguments is wrong!")
-    print("Usage: python src/main.py learn_constant num_of_epochs [output_dir]")
-    sys.exit(1)
+#if(len(sys.argv) != 3 and len(sys.argv) != 4):
+#    print("[Error] Number of program arguments is wrong!")
+#    print("Usage: python src/main.py learn_constant num_of_epochs [output_dir]")
+#    sys.exit(1)
 
-learn_constant = float(sys.argv[1])
-num_of_epochs = int(sys.argv[2])
-output_dir = sys.argv[3] if len(sys.argv) == 4 else None
+#learn_constant = float(sys.argv[1])
+#num_of_epochs = int(sys.argv[2])
+#output_dir = sys.argv[3] if len(sys.argv) == 4 else None
 
 # Configuration for 'python-mnist' package:
 mndata = MNIST(path='./data', return_type='numpy')
