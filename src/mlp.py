@@ -41,10 +41,19 @@ class MultilayerPerceptron:
                 )
             )
         
+        if(n_hlayers == 0):
+            output_layer_input = layer_input
+            output_layer_n_inputs = n_inputs
+        else:
+            # Last hidden layer output
+            output_layer_input = self.hidden_layers[-1].output
+            # Last hidden layer size
+            output_layer_n_inputs = hlayer_sizes[-1]
+        
         
         # Initializing the output layer:
-        self.output_layer = OutputLayer(layer_input = self.hidden_layers[-1].output, # Last hidden layer output
-                                        n_inputs = hlayer_sizes[-1], # Last hidden layer size
+        self.output_layer = OutputLayer(layer_input = output_layer_input, 
+                                        n_inputs = output_layer_n_inputs, 
                                         n_outputs = n_outputs)
 
         # Record the parameters:
@@ -95,7 +104,7 @@ class OutputLayer:
                                               + self.b)
 
         # Prediction function:
-        self.predict = T.argmax(self.p_y_given_x, axis=1)
+        self.y_pred = T.argmax(self.p_y_given_x, axis=1)
 
     # Function to compute the percentage of errors in an example mini-batch:
     def error_percentage(self, y):
@@ -119,6 +128,10 @@ class OutputLayer:
     # Negative logarithm likehood function:
     def negative_log_likehood(self, y):
         return -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
+        
+    # Squared error
+    def squared_error(self, y):
+        return T.sum((self.p_y_given_x-y) ** 2)
         
         
 class HiddenLayer:
@@ -163,10 +176,14 @@ class HiddenLayer:
         
         self.params = [self.W, self.b]
 
-def train(input_data, input_data_size, input_label, output_n_classifications, hlayer_sizes, learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000, batch_size=20):
+def train(input_data, input_data_size, input_label, n_output, test_data, test_label, hlayer_sizes, learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000, batch_size=20):
 
     # Number of minibatches
     n_minibatches = input_data.get_value(borrow=True).shape[0] // batch_size
+    
+    #n_valid_batches = input_data.get_value(borrow=True).shape[0] // batch_size
+    
+    n_test_batches = test_data.get_value(borrow=True).shape[0] // batch_size
     
     # Minibatch index
     index = T.lscalar()
@@ -181,7 +198,7 @@ def train(input_data, input_data_size, input_label, output_n_classifications, hl
     classifier = MultilayerPerceptron(
         layer_input=x, 
         n_inputs=input_data_size, 
-        n_outputs=output_n_classifications, 
+        n_outputs=n_output, 
         n_hlayers=len(hlayer_sizes), 
         hlayer_sizes=hlayer_sizes
     )
@@ -205,11 +222,58 @@ def train(input_data, input_data_size, input_label, output_n_classifications, hl
     # Train model definition
     train_model = theano.function(
         inputs=[index],
-        outputs=cost,
+        outputs=[cost, classifier.error_percentage(y)],
         updates=updates,
         givens={
-            x: input_data[index * batch_size: (index+1) * batch_size],
-            y: input_label[index * batch_size: (index+1) * batch_size]
+            x: input_data[index * batch_size : (index+1) * batch_size],
+            y: input_label[index * batch_size : (index+1) * batch_size]
         }
     )
+    
+    # Validation model definition, validation set is the trainig set
+#    validate_model = theano.function(
+#        inputs=[index],
+#        outputs=classifier.error_percentage(y),
+#        givens={
+#            x: input_data[index * batch_size : (index + 1) * batch_size],
+#            y: input_label[index * batch_size : (index + 1) * batch_size]
+#        }
+#    )
+    
+    # Test model definition
+    test_model = theano.function(
+        inputs=[index],
+        outputs=classifier.error_percentage(y),
+        givens={
+            x: test_data[index * batch_size : (index + 1) * batch_size],
+            y: test_label[index * batch_size : (index + 1) * batch_size]
+        }
+    )
+    
+    print_freq = 1000
+    test_score = 0.
+    
+    epoch = 0
+    
+    while (epoch < n_epochs):
+        epoch = epoch + 1
+        epoch_cost = 0
+        epoch_error = 0
+        
+        for minibatch_index in range(n_minibatches):
+            
+            iter = epoch * n_minibatches + minibatch_index
+            minibatch_cost, minibatch_error = train_model(minibatch_index)
+            epoch_cost = epoch_cost + minibatch_cost
+            epoch_error = epoch_error + minibatch_error * batch_size
+            
+#            if (iter % print_freq == 0):
+#                print('    epoch %i/%i, minibatch %i/%i, minibatch cost %f' % (epoch, n_epochs, minibatch_index, n_minibatches, minibatch_cost))
+    
+        test_losses = [test_model(i) for i in range(n_test_batches)]
+        test_score = np.mean(test_losses)
+            
+        print('epoch %i/%i, epoch cost %f, epoch error %f %%, test error %f %%' % (epoch, n_epochs, epoch_cost, epoch_error / (n_minibatches * batch_size) * 100, test_score * 100))
+    
+    print('Optimization complete. test error %f %%' % (test_score * 100))
 
