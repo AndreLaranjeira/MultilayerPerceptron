@@ -49,15 +49,15 @@ test_labels = data.np_to_theano(np_test_labels, cast_to_label=True)
 
 print("(Done!)")
 
-mlp.train(
+classifier = mlp.train(
     input_data=train_images, 
     input_data_size=28*28, 
     input_label=train_labels, 
     n_output=10, 
     test_data=test_images, 
     test_label=test_labels, 
-    hlayer_sizes=[100,100],
+    hlayer_sizes=[10,10],
     learning_rate=0.0001,
-    n_epochs=100
+    n_epochs=10
 )
     

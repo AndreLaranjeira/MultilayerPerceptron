@@ -274,6 +274,14 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
         test_score = np.mean(test_losses)
             
         print('epoch %i/%i, epoch cost %f, epoch error %f %%, test error %f %%' % (epoch, n_epochs, epoch_cost, epoch_error / (n_minibatches * batch_size) * 100, test_score * 100))
+        
+        if(epoch == n_epochs-1):
+            train_more = input('Want more training? [y/n]\n')
+            if train_more == 'y':
+                extra_epochs = input('How many more epochs? ')
+                n_epochs = n_epochs + int(extra_epochs)
     
     print('Optimization complete. test error %f %%' % (test_score * 100))
+    
+    return classifier
 
