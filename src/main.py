@@ -56,8 +56,8 @@ classifier = mlp.train(
     n_output=10, 
     test_data=test_images, 
     test_label=test_labels, 
-    hlayer_sizes=[10,10],
-    learning_rate=0.0001,
+    hlayer_sizes=[20,20],
+    learning_rate=0.001,
     n_epochs=10
 )
     

@@ -72,6 +72,20 @@ class MultilayerPerceptron:
 
         ## MLP Negative logarithm likehood:
         self.negative_log_likehood = self.output_layer.negative_log_likehood
+        
+    def predict(self, layer_input):
+        x = self.input
+    
+        predict_model = theano.function(
+            inputs=[],
+            outputs=self.output_layer.y_pred,
+            givens={
+                x: layer_input
+            }
+        )
+        
+        return predict_model()
+        
 
 # Class to represent the output layer of a multilayer perceptron:
 #   Parameters:
@@ -275,7 +289,7 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
             
         print('epoch %i/%i, epoch cost %f, epoch error %f %%, test error %f %%' % (epoch, n_epochs, epoch_cost, epoch_error / (n_minibatches * batch_size) * 100, test_score * 100))
         
-        if(epoch == n_epochs-1):
+        if(epoch == n_epochs):
             train_more = input('Want more training? [y/n]\n')
             if train_more == 'y':
                 extra_epochs = input('How many more epochs? ')
