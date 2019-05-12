@@ -18,7 +18,7 @@ import theano.tensor as T
 
 class MultilayerPerceptron:
 
-    def __init__(self, layer_input, n_inputs, n_outputs, n_hlayers, hlayer_sizes):
+    def __init__(self, layer_input, n_inputs, n_outputs, n_hlayers, hlayer_sizes, crossEntropy=True, softMax=True):
 
         # Initialize the input:
         self.input = layer_input
@@ -54,14 +54,15 @@ class MultilayerPerceptron:
         # Initializing the output layer:
         self.output_layer = OutputLayer(layer_input = output_layer_input, 
                                         n_inputs = output_layer_n_inputs, 
-                                        n_outputs = n_outputs)
+                                        n_outputs = n_outputs,
+                                        softMax=softMax)
 
         # Record the parameters:
         self.params = self.output_layer.params + list(sum(map(lambda x: x.params, self.hidden_layers),[]))
 
         # Cost metrics:
         ## L1 cost metric:
-        self.L1 = abs(self.output_layer.W).sum() + sum(map(lambda x: x.W.sum(), self.hidden_layers))
+        self.L1 = abs(self.output_layer.W).sum() + sum(map(lambda x: abs(x.W).sum(), self.hidden_layers))
 
         ## L2 squared cost metric:
         self.L2_sqr = (self.output_layer.W ** 2).sum() + sum(map(lambda x: (x.W ** 2).sum(), self.hidden_layers))
@@ -70,8 +71,8 @@ class MultilayerPerceptron:
         ## MLP errors:
         self.error_percentage = self.output_layer.error_percentage
 
-        ## MLP Negative logarithm likehood:
-        self.negative_log_likehood = self.output_layer.negative_log_likehood
+        ## MLP cost:
+        self.cost = self.output_layer.negative_log_likehood if crossEntropy else self.output_layer.squared_error
         
     def predict(self, layer_input):
         x = self.input
@@ -95,7 +96,7 @@ class MultilayerPerceptron:
 
 class OutputLayer:
 
-    def __init__(self, layer_input, n_inputs, n_outputs):
+    def __init__(self, layer_input, n_inputs, n_outputs, softMax=True):
 
         # Initialize layer_input, weights and biases:
         self.layer_input = layer_input
@@ -114,26 +115,28 @@ class OutputLayer:
         self.params = [self.W, self.b]
 
         # Probability function:
-        self.p_y_given_x = T.nnet.softmax(T.dot(layer_input, self.W)
-                                              + self.b)
+#        self.p_y_given_x = T.nnet.softmax(T.dot(layer_input, self.W) + self.b) if logistic else (T.dot(layer_input, self.W) + self.b)
+        self.p_y_given_x = T.nnet.softmax(T.dot(layer_input, self.W) + self.b) if softMax else (T.dot(layer_input, self.W) + self.b)
 
         # Prediction function:
         self.y_pred = T.argmax(self.p_y_given_x, axis=1)
+#        self.y_pred = T.nnet.softmax(T.dot(layer_input, self.W) + self.b) if logistic else (T.dot(layer_input, self.W) + self.b)
 
     # Function to compute the percentage of errors in an example mini-batch:
     def error_percentage(self, y):
-
+        
+        expected = T.argmax(y, axis=1)
         # First and foremost, error handling!
         # Handles different output and prediction sizes:
-        if(y.ndim != self.y_pred.ndim):
+        if(expected.ndim != self.y_pred.ndim):
             raise TypeError(
                 'Label tensor is not the same size as predictions tensor!',
-                ('y', y.type, 'y_pred', self.y_pred.type)
+                ('expected', expected.type, 'y_pred', self.y_pred.type)
             )
 
         # Check if labels are integers:
-        if y.dtype.startswith('int'):
-            return T.mean(T.neq(self.y_pred, y))
+        if expected.dtype.startswith('int'):
+            return T.mean(T.neq(self.y_pred, expected))
 
         # Handles labels that aren't integers:
         else:
@@ -141,11 +144,12 @@ class OutputLayer:
 
     # Negative logarithm likehood function:
     def negative_log_likehood(self, y):
-        return -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
+#        return -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
+        return T.mean(T.nnet.binary_crossentropy(self.p_y_given_x, y))
         
     # Squared error
     def squared_error(self, y):
-        return T.sum((self.p_y_given_x-y) ** 2)
+        return T.mean(T.sqr(self.p_y_given_x - y))
         
         
 class HiddenLayer:
@@ -190,7 +194,7 @@ class HiddenLayer:
         
         self.params = [self.W, self.b]
 
-def train(input_data, input_data_size, input_label, n_output, test_data, test_label, hlayer_sizes, learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000, batch_size=20):
+def train(input_data, input_data_size, input_label, n_output, test_data, test_label, hlayer_sizes, learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000, batch_size=20, crossEntropy=True, softMax=True):
 
     # Number of minibatches
     n_minibatches = input_data.get_value(borrow=True).shape[0] // batch_size
@@ -206,7 +210,7 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
     x = T.matrix('x')
     
     # Label matrix
-    y = T.ivector('y')
+    y = T.matrix('y')
     
     # Instance of MLP
     classifier = MultilayerPerceptron(
@@ -214,12 +218,14 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
         n_inputs=input_data_size, 
         n_outputs=n_output, 
         n_hlayers=len(hlayer_sizes), 
-        hlayer_sizes=hlayer_sizes
+        hlayer_sizes=hlayer_sizes,
+        crossEntropy=crossEntropy,
+        softMax=softMax
     )
     
     # Cost definition
     cost = (
-        classifier.negative_log_likehood(y)
+        classifier.cost(y)
         + L1_reg * classifier.L1
         + L2_reg * classifier.L2_sqr
     )
@@ -240,7 +246,7 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
         updates=updates,
         givens={
             x: input_data[index * batch_size : (index+1) * batch_size],
-            y: input_label[index * batch_size : (index+1) * batch_size]
+            y: input_label[index * batch_size : (index + 1) * batch_size]
         }
     )
     
@@ -269,6 +275,8 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
     
     epoch = 0
     
+    train_stats = []
+    
     while (epoch < n_epochs):
         epoch = epoch + 1
         epoch_cost = 0
@@ -286,7 +294,8 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
     
         test_losses = [test_model(i) for i in range(n_test_batches)]
         test_score = np.mean(test_losses)
-            
+        
+        train_stats.append({'epoch': epoch, 'cost': epoch_cost, 'epoch_error': epoch_error / (n_minibatches * batch_size) * 100, 'test_error': test_score * 100})
         print('epoch %i/%i, epoch cost %f, epoch error %f %%, test error %f %%' % (epoch, n_epochs, epoch_cost, epoch_error / (n_minibatches * batch_size) * 100, test_score * 100))
         
         if(epoch == n_epochs):
@@ -297,5 +306,5 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
     
     print('Optimization complete. test error %f %%' % (test_score * 100))
     
-    return classifier
+    return classifier, train_stats
 
