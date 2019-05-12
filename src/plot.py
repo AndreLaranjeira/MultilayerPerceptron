@@ -1,6 +1,6 @@
 # Module to handle displaying and saving data plots.
 
-# Imports:
+# Package imports:
 import matplotlib.pyplot as plt
 
 # Classes:
