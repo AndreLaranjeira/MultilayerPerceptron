@@ -23,11 +23,8 @@ class MultilayerPerceptron:
         # Initialize the input:
         self.input = layer_input
 
-        # WARNING: This implementation is only temporary! Changes should be made
-        # to it, to account for the HiddenLayer implementation!!!
-        
         self.hidden_layers = []
-        
+
         # Create n_hlayers of hidden layers
         for i in range(n_hlayers):
             # Append hiddenLayer
@@ -40,7 +37,7 @@ class MultilayerPerceptron:
                     activation=T.tanh
                 )
             )
-        
+
         if(n_hlayers == 0):
             output_layer_input = layer_input
             output_layer_n_inputs = n_inputs
@@ -49,11 +46,14 @@ class MultilayerPerceptron:
             output_layer_input = self.hidden_layers[-1].output
             # Last hidden layer size
             output_layer_n_inputs = hlayer_sizes[-1]
-        
-        
+
+        # If crossEntropy is enabled, softMax should also be enabled:
+        if(crossEntropy and not(softMax)):
+            softMax = True
+
         # Initializing the output layer:
-        self.output_layer = OutputLayer(layer_input = output_layer_input, 
-                                        n_inputs = output_layer_n_inputs, 
+        self.output_layer = OutputLayer(layer_input = output_layer_input,
+                                        n_inputs = output_layer_n_inputs,
                                         n_outputs = n_outputs,
                                         softMax=softMax)
 
@@ -73,10 +73,10 @@ class MultilayerPerceptron:
 
         ## MLP cost:
         self.cost = self.output_layer.negative_log_likehood if crossEntropy else self.output_layer.squared_error
-        
+
     def predict(self, layer_input):
         x = self.input
-    
+
         predict_model = theano.function(
             inputs=[],
             outputs=self.output_layer.y_pred,
@@ -84,9 +84,9 @@ class MultilayerPerceptron:
                 x: layer_input
             }
         )
-        
+
         return predict_model()
-        
+
 
 # Class to represent the output layer of a multilayer perceptron:
 #   Parameters:
@@ -124,7 +124,7 @@ class OutputLayer:
 
     # Function to compute the percentage of errors in an example mini-batch:
     def error_percentage(self, y):
-        
+
         expected = T.argmax(y, axis=1)
         # First and foremost, error handling!
         # Handles different output and prediction sizes:
@@ -146,19 +146,19 @@ class OutputLayer:
     def negative_log_likehood(self, y):
 #        return -T.mean(T.log(self.p_y_given_x)[T.arange(y.shape[0]), y])
         return T.mean(T.nnet.binary_crossentropy(self.p_y_given_x, y))
-        
+
     # Squared error
     def squared_error(self, y):
         return T.mean(T.sqr(self.p_y_given_x - y))
-        
-        
+
+
 class HiddenLayer:
-    
+
     def __init__(self, rng, layer_input, n_in, n_out, W=None, b=None, activation=T.tanh):
-        
+
         # Set input object variable
         self.input = layer_input
-        
+
         # Set weights using random number generator (rng) given
         if W is None:
             # Suggestion of Xavier
@@ -172,73 +172,73 @@ class HiddenLayer:
             )
             if activation == theano.tensor.nnet.sigmoid:
                 W_values *= 4
-                
+
             # Set as theano variable
             W = theano.shared(value=W_values, name='W', borrow=True)
-            
+
         # Set all initial biases to zero
         if b is None:
             b_values = np.zeros((n_out,), dtype=theano.config.floatX)
             b = theano.shared(value=b_values, name='b', borrow=True)
-        
+
         self.W = W
         self.b = b
-        
+
         lin_output = T.dot(layer_input, self.W) + self.b
-        
+
         # Sets activation function over output if there's such function
         self.output = (
             lin_output if activation is None
             else activation(lin_output)
         )
-        
+
         self.params = [self.W, self.b]
 
 def train(input_data, input_data_size, input_label, n_output, test_data, test_label, hlayer_sizes, learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000, batch_size=20, crossEntropy=True, softMax=True):
 
     # Number of minibatches
     n_minibatches = input_data.get_value(borrow=True).shape[0] // batch_size
-    
+
     #n_valid_batches = input_data.get_value(borrow=True).shape[0] // batch_size
-    
+
     n_test_batches = test_data.get_value(borrow=True).shape[0] // batch_size
-    
+
     # Minibatch index
     index = T.lscalar()
-    
+
     # Input matrix
     x = T.matrix('x')
-    
+
     # Label matrix
     y = T.matrix('y')
-    
+
     # Instance of MLP
     classifier = MultilayerPerceptron(
-        layer_input=x, 
-        n_inputs=input_data_size, 
-        n_outputs=n_output, 
-        n_hlayers=len(hlayer_sizes), 
+        layer_input=x,
+        n_inputs=input_data_size,
+        n_outputs=n_output,
+        n_hlayers=len(hlayer_sizes),
         hlayer_sizes=hlayer_sizes,
         crossEntropy=crossEntropy,
         softMax=softMax
     )
-    
+
     # Cost definition
     cost = (
         classifier.cost(y)
         + L1_reg * classifier.L1
         + L2_reg * classifier.L2_sqr
     )
-    
+
     # Compute gradient
     gparams = [T.grad(cost, param) for param in classifier.params]
-    
+
     # Compute param update
     updates = [
         (param, param - learning_rate * gparam)
         for param, gparam in zip(classifier.params, gparams)
     ]
-    
+
     # Train model definition
     train_model = theano.function(
         inputs=[index],
@@ -249,7 +249,7 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
             y: input_label[index * batch_size : (index + 1) * batch_size]
         }
     )
-    
+
     # Validation model definition, validation set is the trainig set
 #    validate_model = theano.function(
 #        inputs=[index],
@@ -259,7 +259,7 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
 #            y: input_label[index * batch_size : (index + 1) * batch_size]
 #        }
 #    )
-    
+
     # Test model definition
     test_model = theano.function(
         inputs=[index],
@@ -269,42 +269,41 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
             y: test_label[index * batch_size : (index + 1) * batch_size]
         }
     )
-    
+
     print_freq = 1000
     test_score = 0.
-    
+
     epoch = 0
-    
+
     train_stats = []
-    
+
     while (epoch < n_epochs):
         epoch = epoch + 1
         epoch_cost = 0
         epoch_error = 0
-        
+
         for minibatch_index in range(n_minibatches):
-            
+
             iter = epoch * n_minibatches + minibatch_index
             minibatch_cost, minibatch_error = train_model(minibatch_index)
             epoch_cost = epoch_cost + minibatch_cost
             epoch_error = epoch_error + minibatch_error * batch_size
-            
+
 #            if (iter % print_freq == 0):
 #                print('    epoch %i/%i, minibatch %i/%i, minibatch cost %f' % (epoch, n_epochs, minibatch_index, n_minibatches, minibatch_cost))
-    
+
         test_losses = [test_model(i) for i in range(n_test_batches)]
         test_score = np.mean(test_losses)
-        
+
         train_stats.append({'epoch': epoch, 'cost': epoch_cost, 'epoch_error': epoch_error / (n_minibatches * batch_size) * 100, 'test_error': test_score * 100})
         print('epoch %i/%i, epoch cost %f, epoch error %f %%, test error %f %%' % (epoch, n_epochs, epoch_cost, epoch_error / (n_minibatches * batch_size) * 100, test_score * 100))
-        
+
         if(epoch == n_epochs):
             train_more = input('Want more training? [y/n]\n')
             if train_more == 'y':
                 extra_epochs = input('How many more epochs? ')
                 n_epochs = n_epochs + int(extra_epochs)
-    
-    print('Optimization complete. test error %f %%' % (test_score * 100))
-    
-    return classifier, train_stats
 
+    print('Optimization complete. test error %f %%' % (test_score * 100))
+
+    return classifier, train_stats

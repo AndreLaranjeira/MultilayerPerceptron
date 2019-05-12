@@ -19,7 +19,7 @@ import plot
 # Program arguments:
 parser = optparse.OptionParser()
 parser.add_option('-o', action='store', dest="filename", help="filename prefix to save plot images")
-parser.add_option('--cross-entropy', action='store_true', dest="crossEntropy", help="sets cross entropy as cost function, default is mean squared error", default=False)
+parser.add_option('--cross-entropy', action='store_true', dest="crossEntropy", help="sets cross entropy as cost function and overwrites softmax activation to true, default is mean squared error.", default=False)
 parser.add_option('--softmax', action='store_true', dest="softMax", help="sets softmax as activation function on output layer", default=False)
 parser.add_option('--learning-rate', action='store', dest="learning_rate", type="float", help="sets training learning constant", default=0.01, metavar="NUM")
 parser.add_option('--num-epoches', action='store', dest="n_epoches", type="int", help="sets number of epoches for training", default=10, metavar="NUM")
@@ -66,12 +66,12 @@ test_labels = data.np_to_theano(np_test_labels, cast_to_label=True)
 print("(Done!)")
 
 classifier, train_stats = mlp.train(
-    input_data=train_images, 
-    input_data_size=28*28, 
-    input_label=train_labels, 
-    n_output=10, 
-    test_data=test_images, 
-    test_label=test_labels, 
+    input_data=train_images,
+    input_data_size=28*28,
+    input_label=train_labels,
+    n_output=10,
+    test_data=test_images,
+    test_label=test_labels,
     hlayer_sizes=[int(x) for x in options.hiddenLayers.split(',')],
     learning_rate=options.learning_rate,
     n_epochs=options.n_epoches,
@@ -88,7 +88,7 @@ if options.filename is not None:
     plot.save_plot([plot_epochError, plot_testError], 'Erros', 'Nº da época', options.filename + '_error.png')
 
     plot_cost = plot.data_plot([e['cost'] for e in train_stats], 'Custo da época')
-    plot.display_plot([plot_cost], 'Custo', 'Nº da época', options.filename + '_cost.png')
+    plot.save_plot([plot_cost], 'Custo', 'Nº da época', options.filename + '_cost.png')
 
 # Extra test images made by us
 extra_examples_paths = [f for f in listdir('extra_examples') if f.split('.')[-1] == "raw"]
@@ -102,4 +102,3 @@ print("Expected: ")
 print(extra_labels)
 print("Predicted: ")
 print(prediction)
-
