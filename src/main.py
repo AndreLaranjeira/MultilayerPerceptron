@@ -26,7 +26,7 @@ parser.add_option('--num-epoches', action='store', dest="n_epoches", type="int",
 parser.add_option('--batch-size', action='store', dest="batch_size", type="int", help="sets batch size for training with minibatches", default=20, metavar="NUM")
 parser.add_option('--L1-reg', action='store', dest="L1_reg", type="float", help="sets L1 regularization constant", default=0.0, metavar="NUM")
 parser.add_option('--L2-reg', action='store', dest="L2_reg", type="float", help="sets L2 regularization constant", default=0.0001, metavar="NUM")
-parser.add_option('--hidden-layers', action='store', dest="hiddenLayers", help="comma separated list with size for each hidden layer, example: --hidden-layers 100,100 (default)", default="100,100", metavar="LIST")
+parser.add_option('--hidden-layers', action='store', dest="hiddenLayers", help="comma separated list with size for each hidden layer, example: --hidden-layers 100,100 (default). If --hidden-layers none, no hidden layers will be used", default="100,100", metavar="LIST")
 options, args = parser.parse_args()
 
 #if(len(sys.argv) != 3 and len(sys.argv) != 4):
@@ -72,7 +72,7 @@ classifier, train_stats = mlp.train(
     n_output=10, 
     test_data=test_images, 
     test_label=test_labels, 
-    hlayer_sizes=[int(x) for x in options.hiddenLayers.split(',')],
+    hlayer_sizes=[] if options.hiddenLayers == "none" else [int(x) for x in options.hiddenLayers.split(',')],
     learning_rate=options.learning_rate,
     n_epochs=options.n_epoches,
     batch_size=options.batch_size,
