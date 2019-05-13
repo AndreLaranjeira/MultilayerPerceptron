@@ -154,7 +154,7 @@ class OutputLayer:
         return -T.mean(T.log(self.p_y_given_x)[T.arange(T.argmax(y, axis=1).shape[0]), T.argmax(y, axis=1)])
     
     # Cross entropy cost
-    def negative_log_likehood(self, y):
+    def cross_entropy(self, y):
         return T.mean(T.nnet.binary_crossentropy(self.p_y_given_x, y))
 
     # Squared error
