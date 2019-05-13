@@ -19,8 +19,8 @@ import plot
 # Program arguments:
 parser = optparse.OptionParser()
 parser.add_option('-o', action='store', dest="filename", help="filename prefix to save plot images")
-parser.add_option('--cross-entropy', action='store_true', dest="crossEntropy", help="sets cross entropy as cost function, default is mean squared error", default=False)
-parser.add_option('--softmax', action='store_true', dest="softMax", help="sets softmax as activation function on output layer", default=False)
+parser.add_option('--cost', action='store', dest="costFunction", help="sets cost function and overwrites softmax activation to true if not meanSquare, default is meanSquare. Options are: \"meanSquare\", \"crossEntropy\" or \"loglikehood\"", choices=["meanSquare", "crossEntropy", "loglikehood"], default="meanSquare")
+parser.add_option('--softmax', action='store_true', dest="softMax", help="sets softmax as activation function on output layer, default is identitiy function", default=False)
 parser.add_option('--learning-rate', action='store', dest="learning_rate", type="float", help="sets training learning constant", default=0.01, metavar="NUM")
 parser.add_option('--num-epoches', action='store', dest="n_epoches", type="int", help="sets number of epoches for training", default=10, metavar="NUM")
 parser.add_option('--batch-size', action='store', dest="batch_size", type="int", help="sets batch size for training with minibatches", default=20, metavar="NUM")
@@ -78,7 +78,7 @@ classifier, train_stats = mlp.train(
     batch_size=options.batch_size,
     L1_reg=options.L1_reg,
     L2_reg=options.L2_reg,
-    crossEntropy=options.crossEntropy,
+    costFunction=options.costFunction,
     softMax=options.softMax
 )
 
@@ -88,10 +88,10 @@ if options.filename is not None:
     plot.save_plot([plot_epochError, plot_testError], 'Erros', 'Nº da época', options.filename + '_error.png')
 
     plot_cost = plot.data_plot([e['cost'] for e in train_stats], 'Custo da época')
-    plot.display_plot([plot_cost], 'Custo', 'Nº da época', options.filename + '_cost.png')
+    plot.save_plot([plot_cost], 'Custo', 'Nº da época', options.filename + '_cost.png')
 
 # Extra test images made by us
-extra_examples_paths = [f for f in listdir('extra_examples') if f.split('.')[-1] == "raw"]
+extra_examples_paths = [f for f in listdir('extra_examples') if f.split('.')[-1] == "data"]
 extra_images = data.np_to_theano(list(map(lambda path: list(open("extra_examples/" + path, "rb").read()), extra_examples_paths)))
 extra_labels = [int(label.split('.')[0]) for label in extra_examples_paths]
 
@@ -102,4 +102,3 @@ print("Expected: ")
 print(extra_labels)
 print("Predicted: ")
 print(prediction)
-
