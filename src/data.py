@@ -14,8 +14,12 @@ def np_to_theano(data, cast_to_label=False, borrow=True):
                                                dtype=theano.config.floatX),
                                                borrow=borrow)
     else:
-        theano_data = theano.shared(np.asarray(data,
+        theano_data = theano.shared(np.asarray(list(map(__normalize_data, data)),
                                                dtype=theano.config.floatX),
                                                borrow=borrow)
-        
+
     return theano_data
+
+# Private methods:
+def __normalize_data(data):
+    return (data - 127.5)/127.5
