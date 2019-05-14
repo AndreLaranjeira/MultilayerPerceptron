@@ -97,7 +97,7 @@ if options.filename is not None:
 
 # Extra test images made by us
 extra_examples_paths = [f for f in listdir('extra_examples') if f.split('.')[-1] == "data"]
-extra_images = data.np_to_theano(list(map(lambda path: list(open("extra_examples/" + path, "rb").read()), extra_examples_paths)))
+extra_images = data.np_to_theano(np.asarray(list(map(lambda path: list(open("extra_examples/" + path, "rb").read()), extra_examples_paths))))
 extra_labels = [int(label.split('.')[0]) for label in extra_examples_paths]
 
 prediction = list(classifier.predict(extra_images))
