@@ -8,6 +8,7 @@ import sys
 import theano
 from os import listdir
 import optparse
+import csv
 
 # User imports:
 import data
@@ -89,6 +90,10 @@ if options.filename is not None:
 
     plot_cost = plot.data_plot([e['cost'] for e in train_stats], 'Custo da época')
     plot.save_plot([plot_cost], 'Custo', 'Nº da época', options.filename + '_cost.png')
+    with open(options.filename + '.csv', 'w') as f:
+        w = csv.DictWriter(f, train_stats[0].keys())
+        w.writeheader()
+        w.writerows(train_stats)
 
 # Extra test images made by us
 extra_examples_paths = [f for f in listdir('extra_examples') if f.split('.')[-1] == "data"]
