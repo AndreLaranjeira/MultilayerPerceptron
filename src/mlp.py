@@ -19,7 +19,7 @@ from enum import Enum
 
 class MultilayerPerceptron:
 
-    def __init__(self, layer_input, n_inputs, n_outputs, n_hlayers, hlayer_sizes, costFunction="meanSquare", softMax=True):
+    def __init__(self, layer_input, n_inputs, n_outputs, n_hlayers, hlayer_sizes, costFunction="meanSquare", activation="identity"):
 
         # Initialize the input:
         self.input = layer_input
@@ -47,17 +47,23 @@ class MultilayerPerceptron:
             output_layer_input = self.hidden_layers[-1].output
             # Last hidden layer size
             output_layer_n_inputs = hlayer_sizes[-1]
+            
 
-        # softmax should be enabled with crossEntropy or loglikehood
-        if(costFunction is not "meanSquare"):
-            print("[Warning] Using softmax as activation function, needed for crossEntropy or loglikehood.")
-            softMax = True
+        # softmax should be enabled with loglikehood
+        if(costFunction == "loglikehood" and activation == "identity"):
+            print("[Warning] Using softmax as activation function, needed for loglikehood.")
+            activation = "softmax"
+            
+        # sigmoid should be enabled with crossEntropy
+        if(costFunction == "crossEntropy" and activation == "identity"):
+            print("[Warning] Using sigmoid as activation function, needed for crossEntropy.")
+            activation = "sigmoid"
 
         # Initializing the output layer:
         self.output_layer = OutputLayer(layer_input = output_layer_input,
                                         n_inputs = output_layer_n_inputs,
                                         n_outputs = n_outputs,
-                                        softMax=softMax)
+                                        activation=activation)
 
         # Record the parameters:
         self.params = self.output_layer.params + list(sum(map(lambda x: x.params, self.hidden_layers),[]))
@@ -103,7 +109,7 @@ class MultilayerPerceptron:
 
 class OutputLayer:
 
-    def __init__(self, layer_input, n_inputs, n_outputs, softMax=True):
+    def __init__(self, layer_input, n_inputs, n_outputs, activation="identity"):
 
         # Initialize layer_input, weights and biases:
         self.layer_input = layer_input
@@ -123,7 +129,12 @@ class OutputLayer:
 
         # Probability function:
 #        self.p_y_given_x = T.nnet.softmax(T.dot(layer_input, self.W) + self.b) if logistic else (T.dot(layer_input, self.W) + self.b)
-        self.p_y_given_x = T.nnet.softmax(T.dot(layer_input, self.W) + self.b) if softMax else (T.dot(layer_input, self.W) + self.b)
+        if activation == "identity":
+            self.p_y_given_x = (T.dot(layer_input, self.W) + self.b)
+        elif activation == "softmax":
+            self.p_y_given_x = T.nnet.softmax(T.dot(layer_input, self.W) + self.b)
+        else:
+            self.p_y_given_x = T.nnet.sigmoid(T.dot(layer_input, self.W) + self.b)
 
         # Prediction function:
         self.y_pred = T.argmax(self.p_y_given_x, axis=1)
@@ -204,7 +215,7 @@ class HiddenLayer:
 
         self.params = [self.W, self.b]
 
-def train(input_data, input_data_size, input_label, n_output, test_data, test_label, hlayer_sizes, learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000, batch_size=20, costFunction="meanSquare", softMax=True):
+def train(input_data, input_data_size, input_label, n_output, test_data, test_label, hlayer_sizes, learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000, batch_size=20, costFunction="meanSquare", activation="identity"):
 
     # Number of minibatches
     n_minibatches = input_data.get_value(borrow=True).shape[0] // batch_size
@@ -230,7 +241,7 @@ def train(input_data, input_data_size, input_label, n_output, test_data, test_la
         n_hlayers=len(hlayer_sizes),
         hlayer_sizes=hlayer_sizes,
         costFunction=costFunction,
-        softMax=softMax
+        activation=activation
     )
 
     # Cost definition

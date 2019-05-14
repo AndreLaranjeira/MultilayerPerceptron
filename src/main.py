@@ -21,7 +21,7 @@ import plot
 parser = optparse.OptionParser()
 parser.add_option('-o', action='store', dest="filename", help="filename prefix to save plot images")
 parser.add_option('--cost', action='store', dest="costFunction", help="sets cost function and overwrites softmax activation to true if not meanSquare, default is meanSquare. Options are: \"meanSquare\", \"crossEntropy\" or \"loglikehood\"", choices=["meanSquare", "crossEntropy", "loglikehood"], default="meanSquare")
-parser.add_option('--softmax', action='store_true', dest="softMax", help="sets softmax as activation function on output layer, default is identitiy function", default=False)
+parser.add_option('--output-activation', action='store', dest="activation", choices=["identity", "sigmoid", "softmax"], help="sets activation function on output layer, default is identity function, options are: \"identity\", \"sigmoid\" or \"softmax\"", default="identity")
 parser.add_option('--learning-rate', action='store', dest="learning_rate", type="float", help="sets training learning constant", default=0.01, metavar="NUM")
 parser.add_option('--num-epoches', action='store', dest="n_epoches", type="int", help="sets number of epoches for training", default=10, metavar="NUM")
 parser.add_option('--batch-size', action='store', dest="batch_size", type="int", help="sets batch size for training with minibatches", default=20, metavar="NUM")
@@ -80,7 +80,7 @@ classifier, train_stats = mlp.train(
     L1_reg=options.L1_reg,
     L2_reg=options.L2_reg,
     costFunction=options.costFunction,
-    softMax=options.softMax
+    activation=options.activation
 )
 
 if options.filename is not None:
