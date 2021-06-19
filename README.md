@@ -1,10 +1,10 @@
 # Multilayer perceptron - MNIST
 
-### Descrição
+## Descrição
 
 Programa para classificar dígitos manuscritos da base de dados MNIST por meio de um perceptron multicamada. Trabalho 02 da disciplina Tópicos em engenharia: Inteligência artificial 2019/1 da Universidade de Brasília.
 
-### Integrantes:
+## Integrantes
 
 Nome | Matrícula
 ---  | ---
